@@ -1,0 +1,5 @@
+
+# ignore nix builds
+result
+.cache
+out.txt
