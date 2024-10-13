@@ -5,9 +5,9 @@
 
 
 
-bool areDeviceExtensionsSupported(App *app, VkPhysicalDevice phdev) {
+bool Device::areDeviceExtensionsSupported(VkPhysicalDevice phdev) {
     
-    std::vector<const char*> requiredExtensions = app->deviceExtensions;
+    std::vector<const char*> requiredExtensions = this->deviceExtensions;
     
     std::vector<VkExtensionProperties> availableExtensions;
     uint32_t availableExtensionsCount;
@@ -33,11 +33,11 @@ bool areDeviceExtensionsSupported(App *app, VkPhysicalDevice phdev) {
     return supported;
 }
 
-bool areDeviceFeaturesSupported(App *app, VkPhysicalDevice phdev) {
+bool Device::areDeviceFeaturesSupported(VkPhysicalDevice phdev) {
     return true;
 }
 
-QueueFamilyIndices findQueueFamilies(App *app, VkPhysicalDevice phdev) {
+QueueFamilyIndices Device::findQueueFamilies(App *app, VkPhysicalDevice phdev) {
     QueueFamilyIndices indices{};
     
     uint32_t queueFamilyCount = 0;
@@ -57,16 +57,24 @@ QueueFamilyIndices findQueueFamilies(App *app, VkPhysicalDevice phdev) {
         if (graphics && (presentation == VK_TRUE)) {
             indices.graphicsFamily = i;
             indices.presentFamily = i;
+            indices.graphicsFamilyHasValue = true;
+            indices.presentFamilyHasValue = true;
             return indices;
         }
-        if (graphics) indices.graphicsFamily = i;
-        if (presentation == VK_TRUE) indices.presentFamily = i;
+        if (graphics) {
+            indices.graphicsFamily = i;
+            indices.graphicsFamilyHasValue = true;
+        }
+        if (presentation == VK_TRUE) {
+            indices.presentFamily = i;
+            indices.presentFamilyHasValue = true;
+        }
     }
-
+    
     return indices;
 }
 
-SwapChainSupportDetails querySwapChainSupport(App *app, VkPhysicalDevice phdev) {
+SwapChainSupportDetails Device::querySwapChainSupport(App *app, VkPhysicalDevice phdev) {
   SwapChainSupportDetails details;
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev, app->surface, &details.capabilities);
 
@@ -93,10 +101,10 @@ SwapChainSupportDetails querySwapChainSupport(App *app, VkPhysicalDevice phdev) 
 }
 
 
-bool isPhysicalDeviceSuitble(App *app, VkPhysicalDevice phdev) {
+bool Device::isPhysicalDeviceSuitble(App *app, VkPhysicalDevice phdev) {
 
-    bool extensionsSupported = areDeviceExtensionsSupported(app, phdev);
-    bool featuresSupported = areDeviceFeaturesSupported(app, phdev);
+    bool extensionsSupported = areDeviceExtensionsSupported(phdev);
+    bool featuresSupported = areDeviceFeaturesSupported(phdev);
 
     bool queueFamiliesComplete = findQueueFamilies(app, phdev).isComplete();
 
@@ -110,7 +118,7 @@ bool isPhysicalDeviceSuitble(App *app, VkPhysicalDevice phdev) {
     
     return extensionsSupported && featuresSupported && queueFamiliesComplete && swapChainValid;
 }
-//if (app->debug) {
+//if (debug) {
 //    std::cout << "  <" << phdevProps.deviceType << ">\"" << phdevProps.deviceName << "\"[" << availableExtensionsCount << "]" << std::endl;
 //    //std::cout << std::endl;
 //    //for (VkExtensionProperties extProps : availableExtensions) {
@@ -120,7 +128,11 @@ bool isPhysicalDeviceSuitble(App *app, VkPhysicalDevice phdev) {
 //}
 
 
-void pickPhysicalDevice(App *app) {
+void Device::pickPhysicalDevice(App *app) {
+
+    this->deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
     
     std::vector <std::vector<VkPhysicalDevice>> phdevsByType(5,std::vector<VkPhysicalDevice> ());
     std::array <uint32_t,5> phdevTypeOrder = {1,2,3,4,0};
@@ -128,17 +140,17 @@ void pickPhysicalDevice(App *app) {
     std::vector<VkPhysicalDevice> phdevs;
     
     uint32_t phdevsCount;
-    if (VK_SUCCESS != vkEnumeratePhysicalDevices(app->instance, &phdevsCount, nullptr)) {
+    if (VK_SUCCESS != vkEnumeratePhysicalDevices(app->instance.instance, &phdevsCount, nullptr)) {
         throw std::runtime_error("failed to enumerate the PhysicalDevices");
     }
     if (phdevsCount == 0) {
         throw std::runtime_error("no physical device found");
     }
     phdevs.resize(phdevsCount);
-    if (VK_SUCCESS != vkEnumeratePhysicalDevices(app->instance, &phdevsCount, phdevs.data())) {
+    if (VK_SUCCESS != vkEnumeratePhysicalDevices(app->instance.instance, &phdevsCount, phdevs.data())) {
         throw std::runtime_error("failed to enumerate the PhysicalDevices");
     }
-    if (app->debug) { std::cout << "physicalDevices[" << phdevsCount << "]:" << std::endl; }
+    if (debug) { std::cout << "physicalDevices[" << phdevsCount << "]:" << std::endl; }
     for (VkPhysicalDevice phdev : phdevs) {
         if (!isPhysicalDeviceSuitble(app, phdev)) continue;
 
@@ -149,53 +161,114 @@ void pickPhysicalDevice(App *app) {
     
     for (int32_t t : phdevTypeOrder) {
         for (VkPhysicalDevice phdev : phdevsByType[t]) {
-            app->physicalDevice = phdev;
-            app->swapchainSupport = querySwapChainSupport(app, phdev);
+            physicalDevice = phdev;
+            swapchainSupport = querySwapChainSupport(app, phdev);
+            queueFamilies = findQueueFamilies(app, phdev);
             return;
         }
     }
     std::runtime_error("failed to find suitable physicalDevice");
 }
 
-void createDevice(App *app) {
-    app->deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+void Device::destroy() {
+    vkDestroyDevice(this->device, nullptr);
+}
+void Device::create(App *app) {
 
-    pickPhysicalDevice(app);
-
-    QueueFamilyIndices indices = findQueueFamilies(app, app->physicalDevice);
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    QueueFamilyIndices indices = findQueueFamilies(app, this->physicalDevice);
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily, indices.presentFamily};
     float queuePriority = 1.0f;
+
+    //std::vector<VkDeviceQueueCreateInfo> &queueCreateInfos = this->queueCreateInfos;
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos = {};
     for (uint32_t queueFamily : uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamily;
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.pQueuePriorities = &queuePriority;
-        app->queueCreateInfos.push_back(queueCreateInfo);
+        queueCreateInfos.push_back(queueCreateInfo);
     }
     
-    app->DeviceCI.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    app->DeviceCI.queueCreateInfoCount = app->queueCreateInfos.size();
-    app->DeviceCI.pQueueCreateInfos = app->queueCreateInfos.data();
-    app->DeviceCI.enabledExtensionCount = app->deviceExtensions.size();
-    app->DeviceCI.ppEnabledExtensionNames = app->deviceExtensions.data();
+    VkDeviceCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInfo.queueCreateInfoCount    = queueCreateInfos.size();
+    createInfo.pQueueCreateInfos       = queueCreateInfos.data();
+    createInfo.enabledExtensionCount   = this->deviceExtensions.size();
+    createInfo.ppEnabledExtensionNames = this->deviceExtensions.data();
     
-    if (VK_SUCCESS != vkCreateDevice(app->physicalDevice, &(app->DeviceCI), nullptr, &(app->device))) {
+    if (VK_SUCCESS != vkCreateDevice(this->physicalDevice, &(createInfo), nullptr, &(this->device))) {
         std::runtime_error("failed to create vkDevice");
     }
-    vkGetDeviceQueue(app->device, indices.graphicsFamily.value(), 0, &(app->graphicsQueue));
-    vkGetDeviceQueue(app->device, indices.presentFamily.value() , 0, &(app->presentQueue));
+    vkGetDeviceQueue(this->device, indices.graphicsFamily, 0, &(this->graphicsQueue));
+    vkGetDeviceQueue(this->device, indices.presentFamily, 0, &(this->presentQueue));
     
-    if (app->debug) {
+    if (debug) {
         VkPhysicalDeviceProperties phdevProps;
-        vkGetPhysicalDeviceProperties(app->physicalDevice, &phdevProps);
+        vkGetPhysicalDeviceProperties(this->physicalDevice, &phdevProps);
         std::cout << "picked \"" << phdevProps.deviceName << "\"" << std::endl;
-        std::cout << "graphicsQueueIndex: " << indices.graphicsFamily.value() << std::endl;
-        std::cout << "presentQueueIndex:  " << indices.presentFamily.value() << std::endl;
+        std::cout << "graphicsQueueIndex: " << indices.graphicsFamily << std::endl;
+        std::cout << "presentQueueIndex:  " << indices.presentFamily << std::endl;
     }
 }
 
+// ############
+//  INFO QUERY
+// ############
+//
+VkFormat Device::findSupportedFormat(
+    const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+  for (VkFormat format : candidates) {
+    VkFormatProperties props;
+    vkGetPhysicalDeviceFormatProperties(this->physicalDevice, format, &props);
+
+    if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+      return format;
+    } else if (
+        tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+      return format;
+    }
+  }
+  throw std::runtime_error("failed to find supported format!");
+}
 
 
+uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags) {
+  VkPhysicalDeviceMemoryProperties memoryProperties;
+  vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+  for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+    if ((typeFilter & (1 << i)) &&
+        (memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags) {
+      return i;
+    }
+  }
+
+  throw std::runtime_error("failed to find suitable memory type!");
+}
+
+
+void Device::createImage(
+    const VkImageCreateInfo &imageInfo,
+    VkMemoryPropertyFlags properties,
+    VkImage &image,
+    VkDeviceMemory &imageMemory) {
+  if (vkCreateImage(this->device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create image!");
+  }
+
+  VkMemoryRequirements memoryRequirements;
+  vkGetImageMemoryRequirements(this->device, image, &memoryRequirements);
+
+  VkMemoryAllocateInfo allocInfo{};
+  allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  allocInfo.allocationSize = memoryRequirements.size;
+  allocInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties);
+
+  if (VK_SUCCESS != vkAllocateMemory(this->device, &allocInfo, nullptr, &imageMemory)) {
+    throw std::runtime_error("failed to allocate image memory!");
+  }
+
+  if (VK_SUCCESS != vkBindImageMemory(this->device, image, imageMemory, 0)) {
+    throw std::runtime_error("failed to bind image memory!");
+  }
+}

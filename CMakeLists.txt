@@ -41,7 +41,8 @@ add_custom_command(
 
 
 # compile the main executable
-add_executable(main src/main.cpp)
+file(GLOB_RECURSE SRC_FILES src/*.cpp)
+add_executable(main ${SRC_FILES})
 target_sources(main PRIVATE src/main.vert.h src/main.frag.h)
 
 

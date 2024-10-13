@@ -2,48 +2,9 @@
 #include "types.hpp"
 #include <vulkan/vulkan_core.h>
 
-#include "main.vert.h" // present by CMake
-#include "main.frag.h" // present by CMake
+void Pipeline::writeDefaultPipelineConf(App *app) {
 
-void createShaderModules(App *app) {
-    app->pipelineConfig.vertShaderCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    app->pipelineConfig.vertShaderCI.codeSize = sizeof(vertShaderCode);
-    app->pipelineConfig.vertShaderCI.pCode = vertShaderCode;
-    
-    if (VK_SUCCESS != vkCreateShaderModule(
-        app->device,
-        &(app->pipelineConfig.vertShaderCI),
-        nullptr,
-        &(app->pipelineConfig.vertShader)
-    )) {
-        throw std::runtime_error("failed to create vertex shader module");
-    }
-
-
-    app->pipelineConfig.fragShaderCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    app->pipelineConfig.fragShaderCI.codeSize = sizeof(fragShaderCode);
-    app->pipelineConfig.fragShaderCI.pCode = fragShaderCode;
-    
-    if (VK_SUCCESS != vkCreateShaderModule(
-        app->device,
-        &(app->pipelineConfig.fragShaderCI),
-        nullptr,
-        &(app->pipelineConfig.fragShader)
-    )) {
-        throw std::runtime_error("failed to create fragment shader module");
-    }
-}
-
-void destroyShaderModules(App *app) {
-  vkDestroyShaderModule(app->device, app->pipelineConfig.vertShader, nullptr);
-  vkDestroyShaderModule(app->device, app->pipelineConfig.fragShader, nullptr);
-}
-
-
-
-void writeDefaultPipelineConf(App *app) {
-
-    PipelineConf *plconf = &(app->pipelineConfig);
+    PipelineConf *plconf = &(this->pipelineConfig);
     
     plconf->InputAssemblyCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     plconf->InputAssemblyCI.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
@@ -112,18 +73,18 @@ void writeDefaultPipelineConf(App *app) {
 }
 
 
-void buildPipelineCI(App* app) {
-  app->pipelineConfig.PipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-  
-  app->pipelineConfig.PipelineCI.pInputAssemblyState = &(app->pipelineConfig.InputAssemblyCI);
-
-  app->pipelineConfig.ViewportCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  app->pipelineConfig.ViewportCI.viewportCount = 1;
-  app->pipelineConfig.ViewportCI.pViewports = &(app->pipelineConfig.viewport);
-  app->pipelineConfig.ViewportCI.scissorCount = 1;
-  app->pipelineConfig.ViewportCI.pScissors = &(app->pipelineConfig.scissor);
-
-}
+//void buildPipelineCI(App* app) {
+//  app->pipelineConfig.PipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+//  
+//  app->pipelineConfig.PipelineCI.pInputAssemblyState = &(app->pipelineConfig.InputAssemblyCI);
+//
+//  app->pipelineConfig.ViewportCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+//  app->pipelineConfig.ViewportCI.viewportCount = 1;
+//  app->pipelineConfig.ViewportCI.pViewports = &(app->pipelineConfig.viewport);
+//  app->pipelineConfig.ViewportCI.scissorCount = 1;
+//  app->pipelineConfig.ViewportCI.pScissors = &(app->pipelineConfig.scissor);
+//
+//}
 
 
 void createPipeline(App* app) {

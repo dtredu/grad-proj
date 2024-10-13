@@ -1,6 +1,4 @@
 #include "types.hpp"
-#include "instance.cpp"
-#include "device.cpp"
 #include <SDL2/SDL_video.h>
 #include <vulkan/vulkan_core.h>
 
@@ -8,8 +6,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
-
-
 
 void run_app(App *app) {
     // window -> Instance -> Surface -> Device -> Swapchain
@@ -22,12 +18,20 @@ void run_app(App *app) {
         360,
         SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN
     );
-    createInstance(app);
-    if (SDL_TRUE != SDL_Vulkan_CreateSurface(app->window,app->instance,&(app->surface))) {
+    app->instance.create(app);
+    if (SDL_TRUE != SDL_Vulkan_CreateSurface(app->window,app->instance.instance,&(app->surface))) {
         throw std::runtime_error("failed to create the surface");
     }
-    createDevice(app);
-  
+    app->device.pickPhysicalDevice(app);
+    app->device.create(app);
+    
+    app->swapchain.createSwapChain(app);
+    app->swapchain.createImageViews(&(app->device));
+    app->swapchain.createRenderPass(&(app->device));
+    app->swapchain.createDepthImagesViewsMemorys(&(app->device));
+    app->swapchain.createFrameBuffers(&(app->device));
+
+    app->swapchain.createSemaphoresFences(&(app->device));
 
     bool running = true;
     while(running) {
@@ -39,19 +43,25 @@ void run_app(App *app) {
             }
     }
 
-
     //vkDestroyDevice(device, nullptr);
     //if (!SDL_Vulkan_DestroySurface(app->window,app->surface)) {
     //    throw std::runtime_error("failed to destroy the surface");
     //}
-    vkDestroyDevice(app->device, nullptr);
-    vkDestroySurfaceKHR(app->instance, app->surface, nullptr);
-    destroyInstance(app);
+    
+    app->swapchain.destroyFrameBuffers(&(app->device));
+    app->swapchain.destroyDepthImagesViewsMemorys(&(app->device));
+    app->swapchain.destroyRenderPass(&(app->device));
+    app->swapchain.destroyImageViews(&(app->device));
+    app->swapchain.destroySwapChain(&(app->device));
+    
+    app->swapchain.destroySemaphoresFences(&(app->device));
+    
+    app->device.destroy();
+    vkDestroySurfaceKHR(app->instance.instance, app->surface, nullptr);
+    app->instance.destroy(app);
     //vkDestroyInstance(vkInst, nullptr);
     SDL_DestroyWindow(app->window);
     SDL_Quit();
-
-
     
     glm::mat4 matrix;
     glm::vec4 vec;
@@ -63,7 +73,7 @@ void run_app(App *app) {
 
 int main() {
     App app{};
-    app.debug = true;
+    debug = true;
     run_app(&app);
     return 0;
 }

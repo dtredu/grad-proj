@@ -1,25 +1,95 @@
 #include "types.hpp"
-#include "validation.cpp"
+//#include "validation.cpp"
+#include <SDL2/SDL_video.h>
 #include <vulkan/vulkan_core.h>
 
+// ###################
+//  VALIDATION LAYERS
+// ###################
 
-void parseInstanceExtensions (App *app) {
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+    void *pUserData) {
+  std::cerr << "validation: " << pCallbackData->pMessage << std::endl;
+
+  return VK_FALSE;
+}
+
+VkResult CreateDebugUtilsMessengerEXT(
+    VkInstance instance,
+    const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+    const VkAllocationCallbacks *pAllocator,
+    VkDebugUtilsMessengerEXT *pDebugMessenger) {
+  auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+      instance,
+      "vkCreateDebugUtilsMessengerEXT");
+  if (func != nullptr) {
+    return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+  } else {
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+  }
+}
+
+void DestroyDebugUtilsMessengerEXT(
+    VkInstance instance,
+    VkDebugUtilsMessengerEXT debugMessenger,
+    const VkAllocationCallbacks *pAllocator) {
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+        instance,
+        "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        func(instance, debugMessenger, pAllocator);
+    }
+}
+
+void Instance::setupDebugMessenger() {
+    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity = 
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType =
+        VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = debugCallback;
+
+    if (CreateDebugUtilsMessengerEXT(this->instance, &createInfo, nullptr, &(this->debugMessenger)) != VK_SUCCESS) {
+        throw std::runtime_error("failed to set up debug messenger!");
+    }
+}
+
+void Instance::removeDebugMessenger() {
+    DestroyDebugUtilsMessengerEXT(this->instance, this->debugMessenger, nullptr);
+    this->debugMessenger = VK_NULL_HANDLE;
+}
+
+
+// ##########
+//  INSTANCE
+// ##########
+
+
+void Instance::parseExtensions (SDL_Window *window) {
     std::vector<const char*> requiredExtensions = {
         //VK_KHR_SURFACE_EXTENSION_NAME,
     };
-    if (app->debug){
+    if (debug){
         requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
     // get extensions required by SDL
     uint32_t requiredBySdlExtensionsCount;
-    if (SDL_FALSE == SDL_Vulkan_GetInstanceExtensions(app->window, &requiredBySdlExtensionsCount, nullptr)) {
+    if (SDL_FALSE == SDL_Vulkan_GetInstanceExtensions(window, &requiredBySdlExtensionsCount, nullptr)) {
         throw std::runtime_error("failed to get instance extensions from SDL");
     }
 
     requiredExtensions.resize(requiredExtensions.size() + requiredBySdlExtensionsCount,nullptr);
     if (SDL_FALSE == SDL_Vulkan_GetInstanceExtensions(
-        app->window,
+        window,
         &requiredBySdlExtensionsCount,
         requiredExtensions.data() + (requiredExtensions.size() - requiredBySdlExtensionsCount)
     )) {
@@ -43,7 +113,7 @@ void parseInstanceExtensions (App *app) {
     if (VK_SUCCESS != vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionsCount, availableExtensions.data())) {
         throw std::runtime_error("failed to get available extensions from vulkan api");
     }
-    if (app->debug) {
+    if (debug) {
         std::cout << "  availableExtensions[" << availableExtensions.size() << "]:" << std::endl;
         for (const VkExtensionProperties prop : availableExtensions) {
             std::cout << "    " << prop.extensionName << std::endl;
@@ -68,15 +138,15 @@ void parseInstanceExtensions (App *app) {
             exit(EXIT_FAILURE);
         }
     }
-    app->instanceExtensions = std::move(requiredExtensions);
+    this->instanceExtensions = std::move(requiredExtensions);
 }
 
-void parseInstanceLayers(App *app) {
+void Instance::parseLayers() {
 
     std::vector<const char*> requiredLayers = {
     };
 
-    if (app->debug){
+    if (debug){
         requiredLayers.push_back("VK_LAYER_KHRONOS_validation");
     }
 
@@ -97,7 +167,7 @@ void parseInstanceLayers(App *app) {
         throw std::runtime_error("failed to get available layers from vulkan api");
     }
 
-    if (app->debug) {
+    if (debug) {
         std::cout << "  availableLayers[" << availableLayers.size() << "]:" << std::endl;
         for (const VkLayerProperties prop : availableLayers) {
             std::cout << "    " << prop.layerName << std::endl;
@@ -123,43 +193,47 @@ void parseInstanceLayers(App *app) {
         }
     }
 
-    app->instanceLayers = std::move(requiredLayers);
+    this->instanceLayers = std::move(requiredLayers);
 }
 
-void createInstance(App *app) {
+void Instance::create(App *app) {
   
-    if (app->debug) {
+    if (debug) {
       std::cout << "instanceCreation:" << std::endl;
     }
-    parseInstanceExtensions(app);
-    parseInstanceLayers(app);
+    parseExtensions(app->window);
+    parseLayers();
 
-    app->appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app->appInfo.pApplicationName = "Hello Triangle";
-    app->appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app->appInfo.pEngineName = "No Engine";
-    app->appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    app->appInfo.apiVersion = VK_API_VERSION_1_0;
+    //VkApplicationInfo appInfo = this->appInfo;
+    VkApplicationInfo appInfo{};
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pEngineName = "No Engine";
+    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.apiVersion = VK_API_VERSION_1_0;
 
-    app->InstanceCI.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    app->InstanceCI.pApplicationInfo = &(app->appInfo);
-    app->InstanceCI.enabledExtensionCount = app->instanceExtensions.size();
-    app->InstanceCI.ppEnabledExtensionNames = app->instanceExtensions.data();
-    app->InstanceCI.enabledLayerCount = app->instanceLayers.size();
-    app->InstanceCI.ppEnabledLayerNames = app->instanceLayers.data();
+    //VkInstanceCreateInfo createInfo = this->InstanceCI;
+    VkInstanceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.pApplicationInfo = &appInfo;
+    createInfo.enabledExtensionCount   = this->instanceExtensions.size();
+    createInfo.ppEnabledExtensionNames = this->instanceExtensions.data();
+    createInfo.enabledLayerCount   = this->instanceLayers.size();
+    createInfo.ppEnabledLayerNames = this->instanceLayers.data();
 
-    if (vkCreateInstance(&(app->InstanceCI), nullptr, &(app->instance)) != VK_SUCCESS) {
+    if (vkCreateInstance(&createInfo, nullptr, &(this->instance)) != VK_SUCCESS) {
         throw std::runtime_error("failed to create the instance");
     }
-    if (app->debug) {
-        setupDebugMessenger(app);
+    if (debug) {
+        setupDebugMessenger();
     }
 }
 
-void destroyInstance(App *app) {
-    if (app->debug) {
-        removeDebugMessenger(app);
+void Instance::destroy(App *app) {
+    if (debug) {
+        removeDebugMessenger();
     }
-    vkDestroyInstance(app->instance, nullptr);
+    vkDestroyInstance(this->instance, nullptr);
 }
 

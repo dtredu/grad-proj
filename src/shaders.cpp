@@ -1,39 +1,40 @@
 
 #include "types.hpp"
 
+#include "main.vert.h" // present by CMake
+#include "main.frag.h" // present by CMake
 
-#include "main.vert.h"
-#include "main.frag.h"
-
-void createShaderModules(App *app) {
-    app->pipelineConfig.vertShaderCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    app->pipelineConfig.vertShaderCI.codeSize = sizeof(vertShaderCode);
-    app->pipelineConfig.vertShaderCI.pCode = vertShaderCode;
+void Pipeline::createShaderModules(Device *device) {
+    VkShaderModuleCreateInfo vertShaderCI;
+    vertShaderCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    vertShaderCI.codeSize = sizeof(vertShaderCode);
+    vertShaderCI.pCode = vertShaderCode;
     
     if (VK_SUCCESS != vkCreateShaderModule(
-        app->device,
-        &(app->pipelineConfig.vertShaderCI),
+        device->device,
+        &vertShaderCI,
         nullptr,
-        &(app->pipelineConfig.vertShader)
+        &(this->shaders.vertShader)
     )) {
         throw std::runtime_error("failed to create vertex shader module");
     }
 
 
-    app->pipelineConfig.fragShaderCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    app->pipelineConfig.fragShaderCI.codeSize = sizeof(fragShaderCode);
-    app->pipelineConfig.fragShaderCI.pCode = fragShaderCode;
+    VkShaderModuleCreateInfo fragShaderCI;
+    fragShaderCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    fragShaderCI.codeSize = sizeof(fragShaderCode);
+    fragShaderCI.pCode = fragShaderCode;
     
     if (VK_SUCCESS != vkCreateShaderModule(
-        app->device,
-        &(app->pipelineConfig.fragShaderCI),
+        device->device,
+        &fragShaderCI,
         nullptr,
-        &(app->pipelineConfig.fragShader)
+        &(this->shaders.fragShader)
     )) {
         throw std::runtime_error("failed to create fragment shader module");
     }
 }
-void destroyShaderModules(App *app) {
-  vkDestroyShaderModule(app->device, app->pipelineConfig.vertShader, nullptr);
-  vkDestroyShaderModule(app->device, app->pipelineConfig.fragShader, nullptr);
+void Pipeline::destroyShaderModules(Device *device) {
+  vkDestroyShaderModule(device->device, this->shaders.vertShader, nullptr);
+  vkDestroyShaderModule(device->device, this->shaders.fragShader, nullptr);
 }
