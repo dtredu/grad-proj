@@ -106,9 +106,6 @@ public:
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     VkRenderPass renderpass = VK_NULL_HANDLE;
 
-    uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-    size_t currentFrame = 0;
-
     uint32_t imageCount = 0;
     std::vector<VkImage> swapChainImages = {};
     std::vector<VkImageView> swapChainImageViews = {};
@@ -121,11 +118,6 @@ public:
     VkFormat swapChainDepthFormat = {};
     VkExtent2D swapChainExtent = {};
 
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
-    std::vector<VkFence> imagesInFlight;
-
     void createSwapChain(App *app);
     void createImageViews();
     void createRenderPass();
@@ -137,10 +129,6 @@ public:
     void destroyRenderPass();
     void destroyDepthImagesViewsMemorys();
     void destroyFrameBuffers();
-
-    void createSemaphoresFences();
-    void destroySemaphoresFences();
-    VkResult acquireNextImage(uint32_t *imageId);
 
 
 private:
@@ -208,10 +196,22 @@ public:
 
     std::vector<VkCommandBuffer> commandBuffers = {};
 
+    uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+    size_t currentFrame = 0;
+
+    std::vector<VkSemaphore> imageAvailableSemaphores;
+    std::vector<VkSemaphore> renderFinishedSemaphores;
+    std::vector<VkFence> inFlightFences;
+    std::vector<VkFence> imagesInFlight;
+    
+    void createSemaphoresFences();
+    void destroySemaphoresFences();
+    VkResult acquireNextImage(uint32_t *imageId);
+
     void createCommandBuffers();
     void destroyCommandBuffers();
     void recordCommandBuffers();
-    VkResult submitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
+    VkResult submitCommandBuffers(const VkCommandBuffer *buffer, uint32_t *imageIndex);
     void drawFrame();
 };
 

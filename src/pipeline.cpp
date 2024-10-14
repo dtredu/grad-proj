@@ -19,7 +19,6 @@ void Pipeline::createPipelineLayout() {
     }
 }
 
-
 void Pipeline::writeDefaultPipelineConf(VkExtent2D extent) {
 
     PipelineConf *plconf = &(this->pipelineConfig);

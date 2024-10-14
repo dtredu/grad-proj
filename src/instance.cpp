@@ -68,11 +68,9 @@ void Instance::removeDebugMessenger() {
     this->debugMessenger = VK_NULL_HANDLE;
 }
 
-
 // ##########
 //  INSTANCE
 // ##########
-
 
 void Instance::parseExtensions (SDL_Window *window) {
     std::vector<const char*> requiredExtensions = {
@@ -96,7 +94,6 @@ void Instance::parseExtensions (SDL_Window *window) {
     )) {
         throw std::runtime_error("failed to get instance extensions from SDL");
     }
-
 
     // dedupe requiredExtensions
     std::sort(requiredExtensions.begin(), requiredExtensions.end(),compare);

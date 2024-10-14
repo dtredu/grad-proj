@@ -40,6 +40,7 @@ void Pipeline::createShaderModules() {
         throw std::runtime_error("failed to create fragment shader module");
     }
 }
+
 void Pipeline::destroyShaderModules() {
   vkDestroyShaderModule(this->device->device, this->vertShaderModule, nullptr);
   vkDestroyShaderModule(this->device->device, this->fragShaderModule, nullptr);

@@ -4,7 +4,6 @@
 #include <vulkan/vulkan_core.h>
 
 
-
 bool Device::areDeviceExtensionsSupported(VkPhysicalDevice phdev) {
     
     std::vector<const char*> requiredExtensions = this->deviceExtensions;
@@ -100,7 +99,6 @@ SwapChainSupportDetails Device::querySwapChainSupport(App *app, VkPhysicalDevice
   return details;
 }
 
-
 bool Device::isPhysicalDeviceSuitble(App *app, VkPhysicalDevice phdev) {
 
     bool extensionsSupported = areDeviceExtensionsSupported(phdev);
@@ -126,7 +124,6 @@ bool Device::isPhysicalDeviceSuitble(App *app, VkPhysicalDevice phdev) {
 //    //}
 //    //std::cout << "\n\n" << std::endl;
 //}
-
 
 void Device::pickPhysicalDevice(App *app) {
 
@@ -215,7 +212,7 @@ void Device::create(App *app) {
 // ############
 //  INFO QUERY
 // ############
-//
+
 VkFormat Device::findSupportedFormat(
     const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
@@ -232,7 +229,6 @@ VkFormat Device::findSupportedFormat(
     throw std::runtime_error("failed to find supported format!");
 }
 
-
 uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags) {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
@@ -244,7 +240,6 @@ uint32_t Device::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags prope
     }
     throw std::runtime_error("failed to find suitable memory type!");
 }
-
 
 void Device::createImage(
     const VkImageCreateInfo &imageInfo,
@@ -273,11 +268,9 @@ void Device::createImage(
   }
 }
 
-
 // ################
 //  RENDERER STUFF
 // ################
-
 
 void Device::destroyCommandPool() {
     vkDestroyCommandPool(this->device, this->commandPool, nullptr);
@@ -289,7 +282,7 @@ void Device::createCommandPool() {
     poolInfo.flags =
         VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-    if (VK_SUCCESS !=vkCreateCommandPool(this->device, &poolInfo, nullptr, &(this->commandPool))) {
+    if (VK_SUCCESS != vkCreateCommandPool(this->device, &poolInfo, nullptr, &(this->commandPool))) {
         throw std::runtime_error("failed to create command pool!");
     }
 }

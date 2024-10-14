@@ -44,7 +44,7 @@ void run_app(App *app) {
     app->renderer.swapchain = &(app->swapchain);
     app->renderer.pipeline = app->pipeline.pipeline;
     app->renderer.pipelineBindType = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    app->swapchain.createSemaphoresFences();
+    app->renderer.createSemaphoresFences();
     app->device.createCommandPool();
     app->renderer.createCommandBuffers();
     app->renderer.recordCommandBuffers();
@@ -68,7 +68,7 @@ void run_app(App *app) {
 
     app->renderer.destroyCommandBuffers();
     app->device.destroyCommandPool();
-    app->swapchain.destroySemaphoresFences();
+    app->renderer.destroySemaphoresFences();
     app->renderer.swapchain = nullptr;
     app->renderer.device = nullptr;
 
@@ -97,7 +97,6 @@ void run_app(App *app) {
 
     return;
 }
-
 
 int main() {
     App app{};
