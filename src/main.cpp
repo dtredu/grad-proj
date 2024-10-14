@@ -14,8 +14,8 @@ void run_app(App *app) {
         "hello-triangle",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        640,
-        360,
+        1280,
+        720,
         SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN
     );
     app->instance.create(app);
@@ -25,13 +25,29 @@ void run_app(App *app) {
     app->device.pickPhysicalDevice(app);
     app->device.create(app);
     
+    app->swapchain.device = &(app->device);
     app->swapchain.createSwapChain(app);
-    app->swapchain.createImageViews(&(app->device));
-    app->swapchain.createRenderPass(&(app->device));
-    app->swapchain.createDepthImagesViewsMemorys(&(app->device));
-    app->swapchain.createFrameBuffers(&(app->device));
+    app->swapchain.createImageViews();
+    app->swapchain.createRenderPass();
+    app->swapchain.createDepthImagesViewsMemorys();
+    app->swapchain.createFrameBuffers();
 
-    app->swapchain.createSemaphoresFences(&(app->device));
+
+    app->pipeline.device = &(app->device);
+    app->pipeline.createShaderModules();
+    app->pipeline.createPipelineLayout();
+    app->pipeline.writeDefaultPipelineConf(app->swapchain.swapChainExtent);
+    app->pipeline.createPipeline(app->swapchain.renderpass);
+
+
+    app->renderer.device = &(app->device);
+    app->renderer.swapchain = &(app->swapchain);
+    app->renderer.pipeline = app->pipeline.pipeline;
+    app->renderer.pipelineBindType = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    app->swapchain.createSemaphoresFences();
+    app->device.createCommandPool();
+    app->renderer.createCommandBuffers();
+    app->renderer.recordCommandBuffers();
 
     bool running = true;
     while(running) {
@@ -41,24 +57,36 @@ void run_app(App *app) {
                 running = false;
                 break;
             }
+        app->renderer.drawFrame();
     }
 
-    //vkDestroyDevice(device, nullptr);
     //if (!SDL_Vulkan_DestroySurface(app->window,app->surface)) {
     //    throw std::runtime_error("failed to destroy the surface");
     //}
     
-    app->swapchain.destroyFrameBuffers(&(app->device));
-    app->swapchain.destroyDepthImagesViewsMemorys(&(app->device));
-    app->swapchain.destroyRenderPass(&(app->device));
-    app->swapchain.destroyImageViews(&(app->device));
-    app->swapchain.destroySwapChain(&(app->device));
-    
-    app->swapchain.destroySemaphoresFences(&(app->device));
+    vkDeviceWaitIdle(app->device.device);
+
+    app->renderer.destroyCommandBuffers();
+    app->device.destroyCommandPool();
+    app->swapchain.destroySemaphoresFences();
+    app->renderer.swapchain = nullptr;
+    app->renderer.device = nullptr;
+
+    app->pipeline.destroyPipeline();
+    app->pipeline.destroyPipelineLayout();
+    app->pipeline.destroyShaderModules ();
+    app->pipeline.device = nullptr;
+
+    app->swapchain.destroyFrameBuffers();
+    app->swapchain.destroyDepthImagesViewsMemorys();
+    app->swapchain.destroyRenderPass();
+    app->swapchain.destroyImageViews();
+    app->swapchain.destroySwapChain();
+    app->swapchain.device = nullptr;
     
     app->device.destroy();
     vkDestroySurfaceKHR(app->instance.instance, app->surface, nullptr);
-    app->instance.destroy(app);
+    app->instance.destroy();
     //vkDestroyInstance(vkInst, nullptr);
     SDL_DestroyWindow(app->window);
     SDL_Quit();

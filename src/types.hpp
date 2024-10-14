@@ -50,7 +50,7 @@ public:
     std::vector<const char*> instanceLayers = {};
     VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
     void create(App *app);
-    void destroy(App *app);
+    void destroy();
 
 private:
     void parseExtensions (SDL_Window *window);
@@ -66,11 +66,13 @@ public:
     VkDevice device = VK_NULL_HANDLE;
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     VkQueue presentQueue = VK_NULL_HANDLE;
+    VkCommandPool commandPool = VK_NULL_HANDLE;
 
     std::vector<const char*> deviceExtensions = {};
 
     SwapChainSupportDetails swapchainSupport = {};
     QueueFamilyIndices queueFamilies = {};
+
 
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     VkFormat findSupportedFormat(
@@ -88,6 +90,8 @@ public:
         VkImage &image,
         VkDeviceMemory &depthImageMemory
     );
+    void createCommandPool();
+    void destroyCommandPool();
 private:
     bool isPhysicalDeviceSuitble(App *app, VkPhysicalDevice phdev);
     bool areDeviceFeaturesSupported(VkPhysicalDevice phdev);
@@ -98,10 +102,12 @@ private:
 
 class SwapChain {
 public:
+    Device *device = nullptr;
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     VkRenderPass renderpass = VK_NULL_HANDLE;
 
     uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+    size_t currentFrame = 0;
 
     uint32_t imageCount = 0;
     std::vector<VkImage> swapChainImages = {};
@@ -121,19 +127,20 @@ public:
     std::vector<VkFence> imagesInFlight;
 
     void createSwapChain(App *app);
-    void createImageViews(Device *device);
-    void createRenderPass(Device *device);
-    void createDepthImagesViewsMemorys(Device *device);
-    void createFrameBuffers(Device *device);
+    void createImageViews();
+    void createRenderPass();
+    void createDepthImagesViewsMemorys();
+    void createFrameBuffers();
 
-    void destroySwapChain(Device *device);
-    void destroyImageViews(Device *device);
-    void destroyRenderPass(Device *device);
-    void destroyDepthImagesViewsMemorys(Device *device);
-    void destroyFrameBuffers(Device *device);
+    void destroySwapChain();
+    void destroyImageViews();
+    void destroyRenderPass();
+    void destroyDepthImagesViewsMemorys();
+    void destroyFrameBuffers();
 
-    void createSemaphoresFences(Device *device);
-    void destroySemaphoresFences(Device *device);
+    void createSemaphoresFences();
+    void destroySemaphoresFences();
+    VkResult acquireNextImage(uint32_t *imageId);
 
 
 private:
@@ -170,20 +177,44 @@ struct PipelineConf {
 };
 
 
-struct Shaders {
-    VkShaderModule vertShader = VK_NULL_HANDLE;
-    VkShaderModule fragShader = VK_NULL_HANDLE;
-};
-
 class Pipeline {
 public:
-    Shaders shaders = {};
-    PipelineConf pipelineConfig = {};
-    void createShaderModules(Device *device);
-    void destroyShaderModules(Device *device);
+    Device *device = nullptr;
 
-    void writeDefaultPipelineConf(App *app);
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    VkShaderModule vertShaderModule = VK_NULL_HANDLE;
+    VkShaderModule fragShaderModule = VK_NULL_HANDLE;
+    
+    PipelineConf pipelineConfig = {};
+
+    void createShaderModules();
+    void destroyShaderModules();
+
+    void createPipelineLayout();
+    void destroyPipelineLayout();
+
+    void writeDefaultPipelineConf(VkExtent2D extent);
+    void createPipeline(VkRenderPass renderPass);
+    void destroyPipeline();
 };
+
+class Renderer {
+public:
+    Device *device = nullptr;
+    SwapChain *swapchain = nullptr;
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipelineBindPoint pipelineBindType;
+
+    std::vector<VkCommandBuffer> commandBuffers = {};
+
+    void createCommandBuffers();
+    void destroyCommandBuffers();
+    void recordCommandBuffers();
+    VkResult submitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
+    void drawFrame();
+};
+
 
 struct App {
     bool debug = false;
@@ -193,10 +224,12 @@ struct App {
 
     Instance instance;
     Device device;
+
     SwapChain swapchain;
 
     Pipeline pipeline;
 
+    Renderer renderer;
 };
 
 

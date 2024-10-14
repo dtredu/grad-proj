@@ -2,22 +2,45 @@
 #include "types.hpp"
 #include <vulkan/vulkan_core.h>
 
-void Pipeline::writeDefaultPipelineConf(App *app) {
+
+void Pipeline::destroyPipelineLayout() {
+    vkDestroyPipelineLayout(this->device->device, this->pipelineLayout, nullptr);
+}
+void Pipeline::createPipelineLayout() {
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.pSetLayouts = nullptr;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    if (VK_SUCCESS != vkCreatePipelineLayout(this->device->device, &pipelineLayoutInfo, nullptr, &(this->pipelineLayout))) { 
+        throw std::runtime_error("failed to enumerate phdev extensions");
+    }
+}
+
+
+void Pipeline::writeDefaultPipelineConf(VkExtent2D extent) {
 
     PipelineConf *plconf = &(this->pipelineConfig);
     
     plconf->InputAssemblyCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    plconf->InputAssemblyCI.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    plconf->InputAssemblyCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     plconf->InputAssemblyCI.primitiveRestartEnable = VK_FALSE;
     
     plconf->viewport.x = 0.0f;
     plconf->viewport.y = 0.0f;
-    plconf->viewport.width = static_cast<float>(app->windowExtent.width);
-    plconf->viewport.height = static_cast<float>(app->windowExtent.height);
+    plconf->viewport.width = static_cast<float>(extent.width);
+    plconf->viewport.height = static_cast<float>(extent.height);
     plconf->viewport.minDepth = 0.0f;
     plconf->viewport.maxDepth = 1.0f;
     plconf->scissor.offset = {0, 0};
-    plconf->scissor.extent = {app->windowExtent.width, app->windowExtent.height};
+    plconf->scissor.extent = extent;
+    plconf->ViewportCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    plconf->ViewportCI.viewportCount = 1;
+    plconf->ViewportCI.pViewports = &(plconf->viewport);
+    plconf->ViewportCI.scissorCount = 1;
+    plconf->ViewportCI.pScissors = &(plconf->scissor);
 
     plconf->RasterizationCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     plconf->RasterizationCI.depthClampEnable = VK_FALSE;
@@ -71,24 +94,71 @@ void Pipeline::writeDefaultPipelineConf(App *app) {
     plconf->DepthStencilCI.front = {};  // Optional
     plconf->DepthStencilCI.back = {};   // Optional
 }
+  VkDeviceSize offsets[] = {0};
 
-
-//void buildPipelineCI(App* app) {
-//  app->pipelineConfig.PipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-//  
-//  app->pipelineConfig.PipelineCI.pInputAssemblyState = &(app->pipelineConfig.InputAssemblyCI);
-//
-//  app->pipelineConfig.ViewportCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-//  app->pipelineConfig.ViewportCI.viewportCount = 1;
-//  app->pipelineConfig.ViewportCI.pViewports = &(app->pipelineConfig.viewport);
-//  app->pipelineConfig.ViewportCI.scissorCount = 1;
-//  app->pipelineConfig.ViewportCI.pScissors = &(app->pipelineConfig.scissor);
-//
-//}
-
-
-void createPipeline(App* app) {
-
-
-
+void Pipeline::destroyPipeline() {
+    vkDestroyPipeline(this->device->device, this->pipeline, nullptr);
 }
+void Pipeline::createPipeline(VkRenderPass renderPass) {
+
+    std::array<VkPipelineShaderStageCreateInfo,2> shaderStages = {};
+
+    shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].module = this->vertShaderModule;
+    shaderStages[0].pName = "main";
+    shaderStages[0].flags = 0;
+    shaderStages[0].pNext = nullptr;
+    shaderStages[0].pSpecializationInfo = nullptr;
+    shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].module = this->fragShaderModule;
+    shaderStages[1].pName = "main";
+    shaderStages[1].flags = 0;
+    shaderStages[1].pNext = nullptr;
+    shaderStages[1].pSpecializationInfo = nullptr;
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount = 0;
+    vertexInputInfo.pVertexBindingDescriptions = nullptr;  // Optional
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.pVertexAttributeDescriptions = nullptr;  // Optional
+
+
+
+    PipelineConf *plconf = &(this->pipelineConfig);
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    //pipelineInfo.pNext = nullptr;
+    //pipelineInfo.flags = 0;
+    pipelineInfo.stageCount = shaderStages.size();
+    pipelineInfo.pStages = shaderStages.data();
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &(plconf->InputAssemblyCI);
+    pipelineInfo.pViewportState      = &(plconf->ViewportCI);
+    pipelineInfo.pRasterizationState = &(plconf->RasterizationCI);
+    pipelineInfo.pMultisampleState   = &(plconf->MultisampleCI);
+    pipelineInfo.pDepthStencilState  = &(plconf->DepthStencilCI);
+    pipelineInfo.pColorBlendState    = &(plconf->ColorBlendCI);
+    //pipelineInfo.pDynamicState = nullptr;
+
+    pipelineInfo.layout = this->pipelineLayout;
+    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.subpass = 0;
+
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.basePipelineIndex = -1;
+    //
+    if (VK_SUCCESS != vkCreateGraphicsPipelines(
+          this->device->device,
+          VK_NULL_HANDLE,
+          1,
+          &pipelineInfo,
+          nullptr,
+          &(this->pipeline)
+    )) {
+    throw std::runtime_error("failed to create graphics pipeline!");
+  }
+}
+

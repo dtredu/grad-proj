@@ -23,19 +23,19 @@ include_directories(${GLM_INCLUDE_DIRS})
 # shaders
 add_custom_command(
     OUTPUT src/main.vert.h
-    DEPENDS shaders/main.vert.glsl
+    DEPENDS shaders/simple.vert.glsl
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND echo -n "const uint32_t vertShaderCode[] = " > src/main.vert.h
-    COMMAND ${glslc_executable} -mfmt=c -fshader-stage=vert shaders/main.vert.glsl -o - >> src/main.vert.h
+    COMMAND ${glslc_executable} -mfmt=c -fshader-stage=vert shaders/simple.vert.glsl -o - >> src/main.vert.h
     COMMAND echo "\;" >> src/main.vert.h
 )
 
 add_custom_command(
     OUTPUT src/main.frag.h
-    DEPENDS shaders/main.frag.glsl
+    DEPENDS shaders/simple.frag.glsl
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMAND echo -n "const uint32_t fragShaderCode[] = " > src/main.frag.h
-    COMMAND ${glslc_executable} -mfmt=c -fshader-stage=frag shaders/main.frag.glsl -o - >> src/main.frag.h
+    COMMAND ${glslc_executable} -mfmt=c -fshader-stage=frag shaders/simple.frag.glsl -o - >> src/main.frag.h
     COMMAND echo "\;" >> src/main.frag.h
 )
 

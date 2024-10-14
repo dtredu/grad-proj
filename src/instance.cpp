@@ -1,6 +1,7 @@
 #include "types.hpp"
 //#include "validation.cpp"
 #include <SDL2/SDL_video.h>
+#include <ostream>
 #include <vulkan/vulkan_core.h>
 
 // ###################
@@ -12,9 +13,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
     void *pUserData) {
-  std::cerr << "validation: " << pCallbackData->pMessage << std::endl;
-
-  return VK_FALSE;
+    std::cerr << "validation: " << pCallbackData->pMessage << std::endl;
+    return VK_FALSE;
 }
 
 VkResult CreateDebugUtilsMessengerEXT(
@@ -22,14 +22,15 @@ VkResult CreateDebugUtilsMessengerEXT(
     const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
     const VkAllocationCallbacks *pAllocator,
     VkDebugUtilsMessengerEXT *pDebugMessenger) {
-  auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-      instance,
-      "vkCreateDebugUtilsMessengerEXT");
-  if (func != nullptr) {
-    return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-  } else {
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-  }
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+            instance,
+            "vkCreateDebugUtilsMessengerEXT"
+        );
+    if (func != nullptr) {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
 }
 
 void DestroyDebugUtilsMessengerEXT(
@@ -230,7 +231,7 @@ void Instance::create(App *app) {
     }
 }
 
-void Instance::destroy(App *app) {
+void Instance::destroy() {
     if (debug) {
         removeDebugMessenger();
     }
