@@ -6,6 +6,7 @@
 #include "vulkan/vulkan.h"
 #include <SDL2/SDL_video.h>
 #include <vector>
+#include <glm/glm.hpp>
 #include <array>
 #include <algorithm>
 #include <iostream>
@@ -92,6 +93,15 @@ public:
     );
     void createCommandPool();
     void destroyCommandPool();
+    void createBuffer(
+        VkDeviceSize size,
+        VkBufferUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkBuffer &buffer,
+        VkDeviceMemory &bufferMemory
+    );
+    void destroyBuffer(VkBuffer buffer);
+
 private:
     bool isPhysicalDeviceSuitble(App *app, VkPhysicalDevice phdev);
     bool areDeviceFeaturesSupported(VkPhysicalDevice phdev);
@@ -136,6 +146,28 @@ private:
     VkPresentModeKHR chooseSwapPresentMode(App *app);
     VkSurfaceFormatKHR chooseSwapSurfaceFormat (App *app);
 
+};
+
+class Model {
+public:
+    struct Vertex {
+        glm::vec2 position;
+    };
+    std::vector <Vertex> vertices{};
+    Device *device = nullptr;
+    VkBuffer vertexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
+
+    size_t maxVertexCount = 0;
+    uint32_t vertexCount = 0;
+
+    void createVertexBuffers(size_t maxVertexCount);
+    void writeVertexBuffers(const std::vector<Vertex> &vertices);
+    void destroyVertexBuffers();
+    static std::vector<VkVertexInputBindingDescription> getVertexBindingDescriptions();
+    static std::vector<VkVertexInputAttributeDescription> getVertexAttributeDescriptions();
+    void bind(VkCommandBuffer commandBuffer);
+    void draw(VkCommandBuffer commandBuffer);
 };
 
 
@@ -210,10 +242,11 @@ public:
 
     void createCommandBuffers();
     void destroyCommandBuffers();
-    void recordCommandBuffers();
+    void recordCommandBuffers(Model *model);
     VkResult submitCommandBuffers(const VkCommandBuffer *buffer, uint32_t *imageIndex);
     void drawFrame();
 };
+
 
 
 struct App {
@@ -222,14 +255,12 @@ struct App {
     VkSurfaceKHR surface = nullptr;
     VkExtent2D windowExtent = {0,0}; // width, height
 
-    Instance instance;
-    Device device;
-
-    SwapChain swapchain;
-
-    Pipeline pipeline;
-
-    Renderer renderer;
+    Instance instance{};
+    Device device{};
+    SwapChain swapchain{};
+    Pipeline pipeline{};
+    Renderer renderer{};
+    Model model{};
 };
 
 

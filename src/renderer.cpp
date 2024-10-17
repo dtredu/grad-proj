@@ -81,7 +81,7 @@ void Renderer::destroyCommandBuffers() {
     this->commandBuffers.clear();
 }
 
-void Renderer::recordCommandBuffers() {
+void Renderer::recordCommandBuffers(Model *model) {
     for (size_t i = 0; i < this->commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -108,10 +108,10 @@ void Renderer::recordCommandBuffers() {
         vkCmdBeginRenderPass(this->commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(this->commandBuffers[i], this->pipelineBindType, this->pipeline);
-        
-        vkCmdDraw(this->commandBuffers[i], 3, 1, 0, 0);
-        //lveModel.bind(commandBuffers[i]);
-        //lveModel.draw(commandBuffers[i]);
+          
+        //vkCmdDraw(this->commandBuffers[i], 3, 1, 0, 0);
+        model->bind(commandBuffers[i]);
+        model->draw(commandBuffers[i]);
 
         vkCmdEndRenderPass(this->commandBuffers[i]);
         if (VK_SUCCESS != vkEndCommandBuffer(this->commandBuffers[i])) {

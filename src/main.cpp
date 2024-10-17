@@ -39,6 +39,18 @@ void run_app(App *app) {
     app->pipeline.writeDefaultPipelineConf(app->swapchain.swapChainExtent);
     app->pipeline.createPipeline(app->swapchain.renderpass);
 
+    app->model.device = &(app->device);
+    //app->model.vertices = {{{0.0f, -0.5f}}, {{0.5f, 0.5f}}, {{-0.5f, 0.5f}}};
+    app->model.vertices = {
+        {{  0.0, -0.75}},
+        {{  0.5,  0.75}},
+        {{ -0.5,  0.75}},
+        //glm::vec2(-0.5,  0.75),
+        //glm::vec2( 0.0,  0.9)
+    };
+    app->model.vertexCount = 3;
+    app->model.createVertexBuffers(3);
+    app->model.writeVertexBuffers(app->model.vertices);
 
     app->renderer.device = &(app->device);
     app->renderer.swapchain = &(app->swapchain);
@@ -47,7 +59,7 @@ void run_app(App *app) {
     app->renderer.createSemaphoresFences();
     app->device.createCommandPool();
     app->renderer.createCommandBuffers();
-    app->renderer.recordCommandBuffers();
+    app->renderer.recordCommandBuffers(&app->model);
 
     bool running = true;
     while(running) {
@@ -71,6 +83,8 @@ void run_app(App *app) {
     app->renderer.destroySemaphoresFences();
     app->renderer.swapchain = nullptr;
     app->renderer.device = nullptr;
+
+    app->model.destroyVertexBuffers();
 
     app->pipeline.destroyPipeline();
     app->pipeline.destroyPipelineLayout();
