@@ -1,5 +1,5 @@
 {
-  description = "OpenCV course work nix flake";
+  description = "Example vulkan triangle";
 
   nixConfig = {
     extra-substituters = [
@@ -21,7 +21,6 @@
   let
     
     nativeBuildInputs = (pkgs: with pkgs.buildPackages; [ cmake pkg-config ]);
-    #buildInputs = (pkgs: with pkgs; [ opencv ]);
     
     package = { 
       lib
