@@ -32,8 +32,7 @@ void Model::writeVertexBuffers(const std::vector<Vertex> &vertices) {
 
 
 void Model::draw(VkCommandBuffer commandBuffer) {
-    //vkCmdDraw(commandBuffer, this->vertexCount, 1, 0, 0);
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+    vkCmdDraw(commandBuffer, this->vertexCount, 1, 0, 0);
 }
 
 

@@ -37,19 +37,29 @@ void run_app(App *app) {
     app->pipeline.createShaderModules();
     app->pipeline.createPipelineLayout();
     app->pipeline.writeDefaultPipelineConf(app->swapchain.swapChainExtent);
+    app->pipeline.pipelineConfig.InputAssemblyCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; // LIST | STRIP
+    app->pipeline.pipelineConfig.RasterizationCI.cullMode = VK_CULL_MODE_BACK_BIT;
     app->pipeline.createPipeline(app->swapchain.renderpass);
 
     app->model.device = &(app->device);
     //app->model.vertices = {{{0.0f, -0.5f}}, {{0.5f, 0.5f}}, {{-0.5f, 0.5f}}};
+    app->model.createVertexBuffers(10);
     app->model.vertices = {
+        {{ -0.5,  0.75}},
         {{  0.0, -0.75}},
         {{  0.5,  0.75}},
-        {{ -0.5,  0.75}},
-        //glm::vec2(-0.5,  0.75),
-        //glm::vec2( 0.0,  0.9)
+
+        {{  0.0, -0.75}}, // culled without strip
+        {{  0.5,  0.75}},
+
+        {{  0.75,-0.75}},
+
+
+        // if using STRIP, then triangles do not have alternating faces
+        // https://stackoverflow.com/questions/9154117/back-face-culling-gl-triangle-strip
     };
-    app->model.vertexCount = 3;
-    app->model.createVertexBuffers(3);
+    //app->model.vertexCount = 3;
+    app->model.vertexCount = app->model.vertices.size();
     app->model.writeVertexBuffers(app->model.vertices);
 
     app->renderer.device = &(app->device);
@@ -104,11 +114,6 @@ void run_app(App *app) {
     //vkDestroyInstance(vkInst, nullptr);
     SDL_DestroyWindow(app->window);
     SDL_Quit();
-    
-    glm::mat4 matrix;
-    glm::vec4 vec;
-    auto test = matrix * vec;
-
     return;
 }
 
