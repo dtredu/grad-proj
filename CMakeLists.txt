@@ -10,6 +10,10 @@ find_package(Vulkan REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(glm REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(stb REQUIRED)
+
+
 find_package(Vulkan COMPONENTS glslc REQUIRED)
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
 message(${glslc_executable})
@@ -19,6 +23,11 @@ include_directories(${Vulkan_INCLUDE_DIRS})
 #include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${SDL2_INCLUDE_DIRS})
 include_directories(${GLM_INCLUDE_DIRS})
+include_directories(${STB_INCLUDE_DIRS})
+
+#message("${SDL2_INCLUDE_DIRS}")
+#message("${STB_INCLUDE_DIRS}")
+#message("${STB_LIBRARIES}")
 
 # shaders
 add_custom_command(
@@ -46,12 +55,12 @@ add_executable(main ${SRC_FILES})
 target_sources(main PRIVATE src/main.vert.h src/main.frag.h)
 
 
-target_link_libraries(main ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES} glm::glm) # glfw
+target_link_libraries(main ${Vulkan_LIBRARIES} ${SDL2_LIBRARIES} glm::glm)
+# stb::stb_image glfw
 
 set_target_properties(main PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
-
 
 
 #add_executable(main main.cpp)

@@ -1,12 +1,17 @@
 
 #pragma once
 
+#include "stb/stb_image.h"
+
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_vulkan.h"
 #include "vulkan/vulkan.h"
 #include <SDL2/SDL_video.h>
 #include <vector>
-#include <glm/glm.hpp>
 #include <array>
 #include <algorithm>
 #include <iostream>
@@ -85,11 +90,13 @@ public:
     void create(App *app);
     void destroy();
     void pickPhysicalDevice(App *app);
+
     void createImage(
         const VkImageCreateInfo &imageInfo,
         VkMemoryPropertyFlags properties,
         VkImage &image,
-        VkDeviceMemory &depthImageMemory
+        VkDeviceMemory &imageMemory,
+        VkDeviceSize *size = nullptr
     );
     void createCommandPool();
     void destroyCommandPool();
@@ -148,18 +155,44 @@ private:
 
 };
 
+struct StbImage {
+
+    std::string path;
+    stbi_uc* pixels;
+    int texWidth;
+    int texHeight;
+    int texChannels;
+    VkDeviceSize size;
+
+};
+
 class Model {
 public:
     struct Vertex {
         glm::vec2 position;
+        glm::vec2 texCoord;
     };
     std::vector <Vertex> vertices{};
     Device *device = nullptr;
     VkBuffer vertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
 
+    StbImage stb_image;
+    void *textureStagingData = nullptr;
+    VkImage textureStagingImage;
+    VkBuffer textureStagingBuffer;
+    VkDeviceMemory textureStagingMemory;
+    VkDeviceSize textureStagingSize;
+    VkImage textureImage;
+    VkDeviceMemory textureMemory;
+
     size_t maxVertexCount = 0;
     uint32_t vertexCount = 0;
+
+    int loadImageSTBI();
+    void createTextureObjects();
+    void destroyTextureObjects();
+    void writeTextureToGPU();
 
     void createVertexBuffers(size_t maxVertexCount);
     void writeVertexBuffers(const std::vector<Vertex> &vertices);
@@ -272,7 +305,6 @@ struct Objects {
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> swapChainImages = {};
     std::vector <VkImageView> swapChainImageViews = {};
-
 
 };
 

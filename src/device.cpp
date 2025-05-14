@@ -6,7 +6,7 @@
 
 bool Device::areDeviceExtensionsSupported(VkPhysicalDevice phdev) {
     
-    std::vector<const char*> requiredExtensions = this->deviceExtensions;
+    std::vector<const char*> &requiredExtensions = this->deviceExtensions;
     
     std::vector<VkExtensionProperties> availableExtensions;
     uint32_t availableExtensionsCount;
@@ -74,27 +74,28 @@ QueueFamilyIndices Device::findQueueFamilies(App *app, VkPhysicalDevice phdev) {
 }
 
 SwapChainSupportDetails Device::querySwapChainSupport(App *app, VkPhysicalDevice phdev) {
-  SwapChainSupportDetails details;
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev, app->surface, &details.capabilities);
+    SwapChainSupportDetails details;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phdev, app->surface, &details.capabilities);
 
-  uint32_t formatCount;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(phdev, app->surface, &formatCount, nullptr);
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(phdev, app->surface, &formatCount, nullptr);
 
-  if (formatCount != 0) {
-    details.formats.resize(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(phdev, app->surface, &formatCount, details.formats.data());
-  }
+    if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(phdev, app->surface, &formatCount, details.formats.data());
+    }
 
-  uint32_t presentModeCount;
-  vkGetPhysicalDeviceSurfacePresentModesKHR(phdev, app->surface, &presentModeCount, nullptr);
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(phdev, app->surface, &presentModeCount, nullptr);
 
-  if (presentModeCount != 0) {
-    details.presentModes.resize(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(
-        phdev,
-        app->surface,
-        &presentModeCount,
-        details.presentModes.data());
+    if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            phdev,
+            app->surface,
+            &presentModeCount,
+            details.presentModes.data()
+        );
   }
   return details;
 }
@@ -204,6 +205,7 @@ void Device::create(App *app) {
         VkPhysicalDeviceProperties phdevProps;
         vkGetPhysicalDeviceProperties(this->physicalDevice, &phdevProps);
         std::cout << "picked \"" << phdevProps.deviceName << "\"" << std::endl;
+        //std::cout << "pushlimit \"" << phdevProps.limits.maxPushConstantsSize << "\"" << std::endl;
         std::cout << "graphicsQueueIndex: " << indices.graphicsFamily << std::endl;
         std::cout << "presentQueueIndex:  " << indices.presentFamily << std::endl;
     }
@@ -245,7 +247,8 @@ void Device::createImage(
     const VkImageCreateInfo &imageInfo,
     VkMemoryPropertyFlags properties,
     VkImage &image,
-    VkDeviceMemory &imageMemory
+    VkDeviceMemory &imageMemory,
+    VkDeviceSize *size
 ) {
     if (vkCreateImage(this->device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
@@ -258,6 +261,9 @@ void Device::createImage(
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memoryRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties);
+    if (nullptr != size) {
+        *size = memoryRequirements.size;
+    }
 
     if (VK_SUCCESS != vkAllocateMemory(this->device, &allocInfo, nullptr, &imageMemory)) {
         throw std::runtime_error("failed to allocate image memory!");

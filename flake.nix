@@ -33,7 +33,8 @@
     , vulkan-validation-layers
     #, glfw-wayland
     , SDL2
-    , glm
+    , glm # currently unix-only
+    , stb
     }@pkgs: stdenv.mkDerivation {
       name = "Vulkan app";
       src = lib.fileset.toSource {
@@ -50,7 +51,8 @@
         vulkan-headers vulkan-loader.dev vulkan-validation-layers
         #glfw-wayland
         SDL2
-        glm
+        glm # currently unix-only
+        stb
       ];
       installPhase = ''
         mkdir $out
@@ -105,6 +107,7 @@
             #glfw-wayland
             SDL2
             glm 
+            stb
           ];
           shellHook = ''
             export VK_LAYER_PATH="${pkgs.vulkan-validation-layers}/share/vulkan/explicit_layer.d"
