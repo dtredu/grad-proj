@@ -1,0 +1,40 @@
+[package]
+name = "app_core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "app"
+path = "src/main.rs"
+
+[dependencies]
+image = "0.25"
+rfd = "0.15"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+bytemuck = { version = "1.25.0", features = ["derive"] }
+egui = "0.34"
+egui-wgpu = { version = "0.34", features = ["winit"] }
+futures = "0.3.32"
+log = "0.4.29"
+nalgebra-glm = { version = "0.20.0", features = [
+    "convert-bytemuck",
+    "serde-serialize",
+] }
+web-time = "1.1.0"
+wgpu = { version = "29", default-features = false }
+winit = "0.30.13"
+
+ash = { version = "0.38", optional = true }
+env_logger = "0.11.10"
+egui-winit = "0.34"
+gpu-allocator = { version = "0.28", optional = true }
+pollster = "0.4.0"
+wgpu-hal = { version = "29", features = ["vulkan"], optional = true }
+
+
